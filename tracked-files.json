@@ -1,3 +1,12 @@
 {
-  "files": []
+  "files": [
+    {
+      "filename": "Cursor-darwin-arm64.dmg",
+      "path": "files/binaries/Cursor-darwin-arm64.dmg",
+      "url": "https://downloads.cursor.com/production/a80ff7dfcaa45d7750f6e30be457261379c29b06/darwin/arm64/Cursor-darwin-arm64.dmg",
+      "size_bytes": 260185475,
+      "downloaded_at": "2026-04-06 22:49 UTC",
+      "sha256": "ee28027e460f4557702b36a42b1629634720a9f6e99de1c921f714bf729f44a9"
+    }
+  ]
 }
