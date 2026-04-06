@@ -1,0 +1,199 @@
+name: Download Files and Store with LFS
+
+on:
+  push:
+    paths:
+      - "download-list.txt"
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Extra URLs to download (one per line)"
+        required: false
+        default: ""
+
+jobs:
+  download-and-store:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git LFS
+        run: git lfs install
+
+      - name: Configure Git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install jq
+        run: sudo apt-get install -y jq > /dev/null 2>&1
+
+      - name: Build URL list
+        id: urls
+        run: |
+          if [ -f download-list.txt ]; then
+            grep -v '^\s*#' download-list.txt | grep -v '^\s*$' > /tmp/all-urls.txt
+          else
+            touch /tmp/all-urls.txt
+          fi
+
+          if [ -n "${{ github.event.inputs.urls }}" ]; then
+            echo "${{ github.event.inputs.urls }}" \
+              | grep -v '^\s*#' \
+              | grep -v '^\s*$' \
+              >> /tmp/all-urls.txt
+          fi
+
+          sort -u /tmp/all-urls.txt -o /tmp/all-urls.txt
+
+          echo "──────────────── URLs to process ────────────────"
+          cat /tmp/all-urls.txt
+          echo "─────────────────────────────────────────────────"
+
+          COUNT=$(wc -l < /tmp/all-urls.txt)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Download files
+        run: |
+          FAILED=0
+
+          while IFS= read -r URL || [ -n "$URL" ]; do
+            URL=$(echo "$URL" | xargs)
+            [ -z "$URL" ] && continue
+
+            FILENAME=$(basename "$URL" | sed 's/[?#].*//')
+            EXT=$(echo "${FILENAME##*.}" | tr '[:upper:]' '[:lower:]')
+            if [ "$EXT" = "$FILENAME" ] || [ -z "$EXT" ]; then EXT="misc"; fi
+
+            case "$EXT" in
+              mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpeg|mpg) DIR="files/video" ;;
+              mp3|wav|flac|aac|ogg|wma|m4a|opus)          DIR="files/audio" ;;
+              jpg|jpeg|png|gif|bmp|svg|webp|ico|tiff|tif|heic|avif) DIR="files/images" ;;
+              pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|txt|rtf|csv|md) DIR="files/documents" ;;
+              zip|tar|gz|bz2|xz|7z|rar|tgz|zst)          DIR="files/archives" ;;
+              json|xml|yaml|yml|toml|ini|sql|html|htm|css|js|ts|py|sh) DIR="files/data" ;;
+              bin|exe|dmg|iso|img|deb|rpm|apk|msi|appimage) DIR="files/binaries" ;;
+              ttf|otf|woff|woff2|eot)                      DIR="files/fonts" ;;
+              *)                                            DIR="files/misc" ;;
+            esac
+
+            mkdir -p "$DIR"
+            DEST="$DIR/$FILENAME"
+
+            if [ -f "$DEST" ]; then
+              echo "⏭  Skipping (already exists): $DEST"
+              continue
+            fi
+
+            echo "⬇  Downloading: $URL → $DEST"
+
+            if curl -fsSL \
+                --retry 3 \
+                --retry-delay 5 \
+                --connect-timeout 30 \
+                --max-time 300 \
+                -o "$DEST" \
+                "$URL"; then
+              echo "✅ Done: $DEST"
+            else
+              echo "❌ Failed: $URL"
+              rm -f "$DEST"
+              FAILED=$((FAILED + 1))
+            fi
+
+          done < /tmp/all-urls.txt
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "⚠️  $FAILED file(s) failed to download."
+            exit 1
+          fi
+
+      - name: Track files with Git LFS
+        run: |
+          find files/ -type f ! -name ".gitkeep" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]' \
+            | sort -u \
+            | while read -r EXT; do
+                echo "🔧 Tracking *.${EXT} with LFS"
+                git lfs track "**/*.${EXT}"
+              done
+
+          grep -v '\.gitkeep' .gitattributes > /tmp/.gitattributes.tmp && \
+            mv /tmp/.gitattributes.tmp .gitattributes
+
+          git add .gitattributes
+
+      - name: Update tracked-files.json
+        run: |
+          EXISTING=$(cat tracked-files.json)
+          UPDATED="$EXISTING"
+
+          while IFS= read -r URL || [ -n "$URL" ]; do
+            URL=$(echo "$URL" | xargs)
+            [ -z "$URL" ] && continue
+
+            FILENAME=$(basename "$URL" | sed 's/[?#].*//')
+            EXT=$(echo "${FILENAME##*.}" | tr '[:upper:]' '[:lower:]')
+
+            case "$EXT" in
+              mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpeg|mpg) DIR="files/video" ;;
+              mp3|wav|flac|aac|ogg|wma|m4a|opus)          DIR="files/audio" ;;
+              jpg|jpeg|png|gif|bmp|svg|webp|ico|tiff|tif|heic|avif) DIR="files/images" ;;
+              pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|txt|rtf|csv|md) DIR="files/documents" ;;
+              zip|tar|gz|bz2|xz|7z|rar|tgz|zst)          DIR="files/archives" ;;
+              json|xml|yaml|yml|toml|ini|sql|html|htm|css|js|ts|py|sh) DIR="files/data" ;;
+              bin|exe|dmg|iso|img|deb|rpm|apk|msi|appimage) DIR="files/binaries" ;;
+              ttf|otf|woff|woff2|eot)                      DIR="files/fonts" ;;
+              *)                                            DIR="files/misc" ;;
+            esac
+
+            DEST="$DIR/$FILENAME"
+
+            if [ -f "$DEST" ]; then
+              ALREADY=$(echo "$UPDATED" | jq --arg path "$DEST" '.files[] | select(.path == $path)' | wc -l)
+              if [ "$ALREADY" -eq 0 ]; then
+                SIZE=$(stat -c%s "$DEST" 2>/dev/null || stat -f%z "$DEST")
+                SHA256=$(sha256sum "$DEST" 2>/dev/null | awk '{print $1}' || shasum -a 256 "$DEST" | awk '{print $1}')
+                TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+                UPDATED=$(echo "$UPDATED" | jq \
+                  --arg filename "$FILENAME" \
+                  --arg path "$DEST" \
+                  --arg url "$URL" \
+                  --argjson size "$SIZE" \
+                  --arg sha256 "$SHA256" \
+                  --arg downloaded_at "$TIMESTAMP" \
+                  '.files += [{
+                    filename: $filename,
+                    path: $path,
+                    url: $url,
+                    size_bytes: $size,
+                    downloaded_at: $downloaded_at,
+                    sha256: $sha256
+                  }]')
+              fi
+            fi
+
+          done < /tmp/all-urls.txt
+
+          echo "$UPDATED" | jq '.' > tracked-files.json
+          echo "✅ tracked-files.json updated"
+
+      - name: Commit and push
+        run: |
+          git add files/ tracked-files.json
+
+          if git diff --cached --quiet; then
+            echo "✅ Nothing new to commit."
+          else
+            ADDED=$(git diff --cached --name-only | grep -v tracked-files.json | wc -l)
+            git commit -m "feat(lfs): add $ADDED downloaded file(s) [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

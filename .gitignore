@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp / logs
+*.tmp
+*.log
+*.swp
+*.swo
+
+# Editor
+.vscode/
+.idea/

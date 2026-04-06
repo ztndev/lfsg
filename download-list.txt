@@ -1,0 +1,11 @@
+# ──────────────────────────────────────────────────────
+# Download List
+# ──────────────────────────────────────────────────────
+# One URL per line.
+# Lines starting with # are ignored.
+# Commit changes to this file to trigger the workflow.
+# ──────────────────────────────────────────────────────
+
+# https://example.com/video.mp4
+# https://example.com/document.pdf
+# https://example.com/archive.zip
