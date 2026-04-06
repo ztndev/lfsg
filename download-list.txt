@@ -9,3 +9,5 @@
 # https://example.com/video.mp4
 # https://example.com/document.pdf
 # https://example.com/archive.zip
+
+https://downloads.cursor.com/production/a80ff7dfcaa45d7750f6e30be457261379c29b06/darwin/arm64/Cursor-darwin-arm64.dmg
