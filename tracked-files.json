@@ -1,4 +1,20 @@
 {
   "files": [
+    {
+      "filename": "metasploit-framework_6.4.124~20260324060227~1rapid7-1_amd64.deb",
+      "path": "files/binaries/metasploit-framework_6.4.124~20260324060227~1rapid7-1_amd64.deb",
+      "url": "https://apt.metasploit.com/pool/main/m/metasploit-framework/metasploit-framework_6.4.124~20260324060227~1rapid7-1_amd64.deb",
+      "size_bytes": 396725876,
+      "downloaded_at": "2026-04-07 15:24 UTC",
+      "sha256": "15edf02135295d2e23c9e1f6bda365665b3364bb8e525c1dd785b4be8c919443"
+    },
+    {
+      "filename": "Cursor-darwin-arm64.dmg",
+      "path": "files/binaries/Cursor-darwin-arm64.dmg",
+      "url": "https://downloads.cursor.com/production/a80ff7dfcaa45d7750f6e30be457261379c29b06/darwin/arm64/Cursor-darwin-arm64.dmg",
+      "size_bytes": 260185475,
+      "downloaded_at": "2026-04-07 15:24 UTC",
+      "sha256": "ee28027e460f4557702b36a42b1629634720a9f6e99de1c921f714bf729f44a9"
+    }
   ]
 }
