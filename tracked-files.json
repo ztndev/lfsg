@@ -15,6 +15,14 @@
       "size_bytes": 260185475,
       "downloaded_at": "2026-04-07 15:24 UTC",
       "sha256": "ee28027e460f4557702b36a42b1629634720a9f6e99de1c921f714bf729f44a9"
+    },
+    {
+      "filename": "Plumpy_mage.rar",
+      "path": "files/archives/Plumpy_mage.rar",
+      "url": "http://213.255.246.182:8000/Plumpy_mage.rar",
+      "size_bytes": 362474754,
+      "downloaded_at": "2026-04-08 23:06 UTC",
+      "sha256": "e829270cf22770d5f09d8061eb87b8f4fde202bcdbd2141c112b6e4e1bf8831c"
     }
   ]
 }
